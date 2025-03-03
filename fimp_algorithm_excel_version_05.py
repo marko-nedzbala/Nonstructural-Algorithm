@@ -9,14 +9,16 @@ import numpy as np
 # Variables for the user to change
 
 # Change the folder and the file path to your file
-USER_FOLDER_PATH = r'C:\Users\e3plfmen\Downloads\Nonstructural for Terence'
-USER_FILE_NAME = 'quick_test.xlsx'
+USER_FOLDER_PATH = r'C:/Users/e3plfmen/Downloads/Sea Bright to Manansquan/Nonstructural'
+USER_FILE_NAME = 'Analysis Run 01.xlsx'
 
 # Change the values on the right hand side to match your basement strings
 BASEMENT_TYPE = {
-    'slab': 'No Basement/Slab on-grade',
+    # 'slab': 'No Basement/Slab on-grade',
+    'slab': 'slab',
     'subgrade': 'Subgrade Basement',
-    'raised': 'Raised/Crawlspace',
+    # 'raised': 'Raised/Crawlspace',
+    'raised': 'raised',
     'walkout': 'Walkout Basement',
     'ranches': 'Bi-Levels and Raised Ranches',
     'split': 'Split Levels'
@@ -24,18 +26,18 @@ BASEMENT_TYPE = {
 
 # Change the values on the right hand side to match your damage types
 DAMAGE_CATEGORY = {
-    'COM' : ['COM', 'IND', 'PUB'],
-    'RES': ['RES']
+    'COM' : ['COMM'],
+    'RES': ['MFR1', 'MFR2', 'MFR3', 'SFR1']
 }
 NONSTRUCTURAL_PARAMETERS = {
-    'damage_category': 'st_damcat',
-    'building_construction_type': 'bldgtype',
-    'square_footage': 'MFsqft',
-    'flood_level': 'WaterElevation_10Year',
-    'main_floor': 'numberofsteps',
-    'protection_level': 'DesignWaterElevation',
-    'ground': 'groundelev_2016_atpoint_ft',
-    'basement': 'basement_type',
+    'damage_category': 'DEType',
+    'building_construction_type': 'Ctype',
+    'square_footage': 'SqFootage',
+    'flood_level': 'FloodLevel',
+    'main_floor': 'FFEML',
+    'protection_level': 'ProtectionLevel',
+    'ground': 'Elevation',
+    'basement': 'Basement',
     }
 
 ###############################################################################
@@ -62,71 +64,6 @@ USAGE_CODES = {
         14: 'High Rise Apts',
         15: 'Townhouses'
     }
-
-# TODO: create a prefined list of results
-TREATMENT_RESULTS = {
-    'residential': {
-        'slab': {
-            'sealant_closures': 'Sealant & Closures',
-            'raise': 'Raise',
-            'raise_ac': 'Raise AC',
-        },
-        'subgrade': {
-            'raise': 'Raise',
-            'fill': 'Fill Basement + Utility Room'
-        },
-        'raised': {
-            'raise': 'Raise',
-            'raise_lovers': 'Raise AC + Louvers'
-        },
-        'walkout': {
-            'raise': 'Raise',
-            'interior': 'Interior Floodwall',
-            'lower_floor': 'Raise Lower Floor + Space'
-        },
-        'ranches': {
-            'raise': 'Raise',
-            'sealant_closures': 'Sealant & Closures',
-            'lower_floor': 'Raise Lower Floor + Space'
-        },
-        'split': {
-            'raise': 'Raise',
-            'sealant_closures': 'Sealant & Closures',
-        },
-        'larger_residential': {
-            'ringwall': 'Ringwall',
-            'raise': 'Raise',
-            'protect': 'Protect Utilities',
-            'sealant_closures': 'Sealant & Closures',
-        }
-    },
-    'non_residential_wood': {
-        'raised': {
-            'raise': 'Raise',
-            'protect': 'Protect Utilities + Louvers',
-        },
-        'slab': {
-            'sealant_closures': 'Sealant & Closures',
-            'raise': 'Raise',
-            'protect': 'Protect Utilities',
-        },
-        'subgrade': {
-            'raise': 'Raise',
-            'fill': 'Fill Basement + Utility Area'
-        },
-        'walkout': {
-            'raise': 'Raise',
-            'interior': 'Interior Floodwall',
-            'lower_floor': 'Raise Lower Floor + Space'
-        }
-    },
-    'non_residential_masonry': {
-        'ringwall': 'Ringwall',
-        'sealant_closures': 'Sealant & Closures',
-        'protect': 'Protect Utilities',
-    }
-}
-
 ###############################################################################
 
 
@@ -316,8 +253,7 @@ class ResidentialClass:
                     return treatment('Raise')
                 elif square_footage > MAX_SIZE:
                     return treatment('Ringwall')
-## Created the BASEMENT_TYPES['ranches'] condition to capture larger residential structures with the Bi-Levels and Raised Ranches basement type               
-        elif basement in [BASEMENT_CODES.get(key) for key in ['0', '2']] or basement == BASEMENT_TYPE['ranches']:
+        elif basement in [BASEMENT_CODES.get(key) for key in ['0', '2']]:
             if not protection_greater_main(protection_level, main_floor):
                 return treatment('Protect Utilities')
             elif protection_greater_main(protection_level, main_floor):
@@ -327,10 +263,9 @@ class ResidentialClass:
                     return treatment('Sealant and Closures')
                 elif (usage_code == USAGE_CODES[12]) and ((protection_level - ground) > 3):
                     if square_footage > MAX_SIZE:
-                        return treatment('Ringwall')
-                    elif square_footage <= MAX_SIZE:
                         return treatment('Raise')
-                        
+                    elif square_footage <= MAX_SIZE:
+                        return treatment('Ringwall')
 
     # This function runs the specific function for the type of basement
     # Based on the 'Basement' type it runs the required function
@@ -477,6 +412,7 @@ class NonResidentialMasonry:
         if square_footage <= MAX_SIZE:            
             if flood_level >= main_floor:
                 if basement in [BASEMENT_CODES.get(key) for key in ['1S', '1W', '3']]:
+                    print(basement)
                     return treatment('Ringwall')
                 elif basement in [BASEMENT_CODES.get(key) for key in ['0', '2']]:
                     if not protection_minus_ground_greater_3:
@@ -512,11 +448,11 @@ class NonResidentialMasonry:
 def check_measures(damage_category,
                    building_construction_type,
                    square_footage,
-                   flood_level,
-                   number_of_steps,
-                   protection_level,
-                   ground,
-                   basement_type):
+                   flood_level=11.6,
+                   number_of_steps=0,
+                   protection_level=13.6,
+                   ground=0,
+                   basement_type=0):
 
     main_floor = main_floor_calculation(number_of_steps, ground, step_height=8)
     
@@ -565,13 +501,13 @@ def check_measures(damage_category,
             if params['damage_category'] in DAMAGE_CATEGORY['RES']:
                     return ResidentialClass.residential_algorithm(**measures)
                     # TODO: Remove below code if above code works
-                    # return NonResidentialWood.nonresidential_wood_algorithm(
-                    #     flood_level=measures['flood level'],
-                    #     main_floor=measures['main floor'],
-                    #     protection_level=measures['protection level'],
+                    # return ResidentialClass.residential_algorithm(
+                    #     flood_level=measures['flood_level'],
+                    #     main_floor=measures['main_floor'],
+                    #     protection_level=measures['protection_level'],
                     #     ground=measures['ground'],
                     #     basement=measures['basement'],
-                    #     square_footage=measures['square footage']
+                    #     square_footage=measures['square_footage']
                     # )
             
             elif params['damage_category'] in DAMAGE_CATEGORY['COM'] and params['building_construction_type'] == WOOD_CONSTRUCTION:
@@ -594,7 +530,6 @@ def check_measures(damage_category,
             
             # uses the construction type of != WOOD_CONSTRUCTION
             elif params['damage_category'] in DAMAGE_CATEGORY['COM'] and params['building_construction_type'] != WOOD_CONSTRUCTION:
-                print('here')
                 return NonResidentialMasonry.nonresidential_masonry_algorithm(**measures)
                 # TODO: Remove below code if above code works
                 # return NonResidentialMasonry.nonresidential_masonry_algorithm(
@@ -632,8 +567,7 @@ class ProcessFiles:
         #                             check(**columns), 
         #                             axis=1)
 
-
-        data_frame['Treatment'] = data_frame.apply(
+        data_frame['treatments'] = data_frame.apply(
             # How we unpack the required variables
             # 1.) return the values() from the NONSTRUCTURAL_PARAMETERS dictionary
             # 2.) put the dictionary (from #1) into a list
@@ -641,24 +575,10 @@ class ProcessFiles:
             # 4.) unpack the dataframe (from #3) into the function
             # 5.) the keys in the dictionary must match the parameter names in the function
             
-            # takes the NONSTRUCTURAL_PARAMETERS dictionary
-##            lambda data_frame: 
-##                check_measures(*data_frame[list(NONSTRUCTURAL_PARAMETERS.values())]),
-##                axis=1)
-
-            
-            
-            lambda data_frame:
-                check_measures(
-                    damage_category=data_frame[NONSTRUCTURAL_PARAMETERS['damage_category']],
-                    building_construction_type=data_frame[NONSTRUCTURAL_PARAMETERS['building_construction_type']],
-                    square_footage=data_frame[NONSTRUCTURAL_PARAMETERS['square_footage']],
-                    flood_level=data_frame[NONSTRUCTURAL_PARAMETERS['flood_level']],
-                    number_of_steps=data_frame[NONSTRUCTURAL_PARAMETERS['main_floor']],
-                    protection_level=data_frame[NONSTRUCTURAL_PARAMETERS['protection_level']],
-                    ground=data_frame[NONSTRUCTURAL_PARAMETERS['ground']],
-                    basement_type=data_frame[NONSTRUCTURAL_PARAMETERS['basement']]
-                ), axis=1)
+            # takes the NONSTRUCTURAL_PARAMETERS dictionary and 
+            lambda data_frame: 
+                check_measures(*data_frame[list(NONSTRUCTURAL_PARAMETERS.values())]),
+                axis=1)
         
     def read_modify_save_file(self):
         if self.file_extension == '.xlsx':
@@ -689,7 +609,3 @@ if __name__ == '__main__':
     process_files.read_modify_save_file()
 
     print(f'Completed. File saved at: {process_files.output_full_path}')
-
-
-
-
